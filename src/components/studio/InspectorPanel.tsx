@@ -16,9 +16,14 @@ export function InspectorPanel() {
 
   if (!item) {
     return (
-      <div className="p-4 text-sm text-neutral-400">
-        Select a piece of furniture to move, rotate, scale, or recolor it. You can also drag items directly in the
-        3D view, or use the gizmo handles once selected.
+      <div className="p-4 text-sm text-neutral-400 space-y-2">
+        <p>
+          Select a piece of furniture to move, rotate, scale, or recolor it. You can also drag items directly in the
+          3D view, or use the gizmo handles once selected.
+        </p>
+        <p className="text-xs text-neutral-400">
+          Shortcuts: arrow keys nudge, Delete removes, Ctrl/Cmd+D duplicates, Esc deselects.
+        </p>
       </div>
     );
   }

@@ -318,6 +318,124 @@ function Rug({ color }: ModelProps) {
   );
 }
 
+function Desk({ color }: ModelProps) {
+  const w = 1.2, d = 0.6, h = 0.73;
+  return (
+    <group>
+      <TableBase w={w} d={d} h={h} color={color} legColor={shade(color, -25)} />
+      <mesh position={[w / 2 - 0.22, h - 0.14, 0.02]} castShadow receiveShadow>
+        <boxGeometry args={[0.36, 0.28, d - 0.08]} />
+        <meshStandardMaterial color={shade(color, -20)} roughness={0.7} />
+      </mesh>
+    </group>
+  );
+}
+
+function OfficeChair({ color }: ModelProps) {
+  const seatH = 0.48;
+  return (
+    <group>
+      <mesh position={[0, 0.03, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.24, 0.24, 0.04, 24]} />
+        <meshStandardMaterial color={METAL} roughness={0.4} metalness={0.5} />
+      </mesh>
+      <mesh position={[0, seatH * 0.55, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.025, 0.025, seatH * 0.95, 10]} />
+        <meshStandardMaterial color={METAL} roughness={0.4} metalness={0.5} />
+      </mesh>
+      <mesh position={[0, seatH, 0]} castShadow receiveShadow>
+        <boxGeometry args={[0.46, 0.08, 0.44]} />
+        <meshStandardMaterial color={color} roughness={0.8} />
+      </mesh>
+      <mesh position={[0, seatH + 0.3, -0.19]} rotation={[-0.12, 0, 0]} castShadow receiveShadow>
+        <boxGeometry args={[0.44, 0.56, 0.08]} />
+        <meshStandardMaterial color={color} roughness={0.8} />
+      </mesh>
+      {[-0.25, 0.25].map((x, i) => (
+        <mesh key={i} position={[x, seatH + 0.12, 0]} castShadow receiveShadow>
+          <boxGeometry args={[0.04, 0.2, 0.3]} />
+          <meshStandardMaterial color={shade(color, -20)} roughness={0.6} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function Ottoman({ color }: ModelProps) {
+  const h = 0.4;
+  return (
+    <group>
+      <mesh position={[0, h / 2 + 0.04, 0]} castShadow receiveShadow>
+        <boxGeometry args={[0.5, h, 0.5]} />
+        <meshStandardMaterial color={color} roughness={0.9} />
+      </mesh>
+      {[[-0.19, -0.19], [0.19, -0.19], [-0.19, 0.19], [0.19, 0.19]].map(([x, z], i) => (
+        <Leg key={i} x={x} z={z} h={0.08} r={0.025} color={shade(color, -30)} />
+      ))}
+    </group>
+  );
+}
+
+function ConsoleTable({ color }: ModelProps) {
+  const w = 1.1, d = 0.35, h = 0.78;
+  return (
+    <group>
+      <TableBase w={w} d={d} h={h} color={color} legColor={shade(color, -25)} />
+      <mesh position={[0, h * 0.4, 0]} castShadow receiveShadow>
+        <boxGeometry args={[w - 0.14, 0.03, d - 0.1]} />
+        <meshStandardMaterial color={shade(color, -10)} roughness={0.6} />
+      </mesh>
+    </group>
+  );
+}
+
+function Mirror({ color }: ModelProps) {
+  const w = 0.55, h = 1.5;
+  return (
+    <group>
+      <mesh position={[0, h / 2 + 0.06, 0]} castShadow receiveShadow>
+        <boxGeometry args={[w, h, 0.04]} />
+        <meshStandardMaterial color={color} roughness={0.6} />
+      </mesh>
+      <mesh position={[0, h / 2 + 0.06, 0.023]} castShadow>
+        <boxGeometry args={[w - 0.08, h - 0.08, 0.01]} />
+        <meshStandardMaterial color="#c7d6de" roughness={0.05} metalness={0.6} />
+      </mesh>
+      <Leg x={-w / 2 + 0.08} z={0.12} h={0.12} r={0.02} color={shade(color, -25)} />
+      <Leg x={w / 2 - 0.08} z={0.12} h={0.12} r={0.02} color={shade(color, -25)} />
+    </group>
+  );
+}
+
+function Dresser({ color }: ModelProps) {
+  const w = 1.0, d = 0.5, h = 0.85;
+  const drawers = 3;
+  return (
+    <group>
+      <mesh position={[0, h / 2, 0]} castShadow receiveShadow>
+        <boxGeometry args={[w, h, d]} />
+        <meshStandardMaterial color={color} roughness={0.65} />
+      </mesh>
+      {Array.from({ length: drawers }).map((_, i) => {
+        const drawerH = (h - 0.1) / drawers;
+        const y = 0.05 + drawerH * i + drawerH / 2;
+        return (
+          <group key={i}>
+            <mesh position={[0, y, d / 2 + 0.001]} castShadow receiveShadow>
+              <boxGeometry args={[w - 0.08, drawerH - 0.04, 0.02]} />
+              <meshStandardMaterial color={shade(color, -12)} roughness={0.65} />
+            </mesh>
+            <mesh position={[0, y, d / 2 + 0.015]} castShadow>
+              <boxGeometry args={[0.14, 0.025, 0.025]} />
+              <meshStandardMaterial color="#c9a24b" metalness={0.6} roughness={0.3} />
+            </mesh>
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
 const REGISTRY: Record<string, (p: ModelProps) => JSX.Element> = {
   "sofa-3seat": Sofa,
   armchair: Armchair,
@@ -334,6 +452,12 @@ const REGISTRY: Record<string, (p: ModelProps) => JSX.Element> = {
   "pendant-lamp": PendantLamp,
   plant: Plant,
   rug: Rug,
+  desk: Desk,
+  "office-chair": OfficeChair,
+  ottoman: Ottoman,
+  "console-table": ConsoleTable,
+  mirror: Mirror,
+  dresser: Dresser,
 };
 
 export function FurnitureModel({ catalogId, color }: { catalogId: string; color: string }) {

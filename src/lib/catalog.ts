@@ -16,6 +16,12 @@ export const CATALOG: CatalogEntry[] = [
   { id: "pendant-lamp", name: "Pendant Lamp", category: "lighting", kind: "model", defaultColor: "#c9a24b", footprint: [0.3, 0.3] },
   { id: "plant", name: "Potted Plant", category: "decor", kind: "model", defaultColor: "#3f7a4d", footprint: [0.45, 0.45] },
   { id: "rug", name: "Area Rug", category: "decor", kind: "model", defaultColor: "#b6472f", footprint: [2.2, 1.5] },
+  { id: "desk", name: "Desk", category: "tables", kind: "model", defaultColor: "#7a5636", footprint: [1.2, 0.6] },
+  { id: "office-chair", name: "Office Chair", category: "seating", kind: "model", defaultColor: "#3f3f46", footprint: [0.55, 0.55] },
+  { id: "ottoman", name: "Ottoman", category: "seating", kind: "model", defaultColor: "#8a9a8b", footprint: [0.5, 0.5] },
+  { id: "console-table", name: "Console Table", category: "tables", kind: "model", defaultColor: "#6b4a34", footprint: [1.1, 0.35] },
+  { id: "mirror", name: "Floor Mirror", category: "decor", kind: "model", defaultColor: "#5b4636", footprint: [0.55, 0.1] },
+  { id: "dresser", name: "Dresser", category: "storage", kind: "model", defaultColor: "#e8e2d6", footprint: [1.0, 0.5] },
 ];
 
 export function getCatalogEntry(id: string): CatalogEntry | undefined {
