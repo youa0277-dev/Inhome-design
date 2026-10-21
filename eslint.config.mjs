@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Base44 export: built and linted by Base44, not by this Next.js app.
+    "base44-app/**",
   ]),
 ]);
 

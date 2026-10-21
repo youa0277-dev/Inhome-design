@@ -1,0 +1,32 @@
+{
+  "name": "DamageEstimate",
+  "type": "object",
+  "title": "Damage Estimate",
+  "description": "A photo-based car repair estimate saved for the signed-in customer.",
+  "properties": {
+    "vehicle_year": { "type": "string" },
+    "vehicle_make": { "type": "string" },
+    "vehicle_model": { "type": "string" },
+    "vehicle_trim": { "type": "string" },
+    "country": { "type": "string", "enum": ["US", "CA"] },
+    "region_code": { "type": "string" },
+    "area_type": { "type": "string", "enum": ["metro", "suburban", "rural"] },
+    "city": { "type": "string" },
+    "currency": { "type": "string", "enum": ["USD", "CAD"] },
+    "notes": { "type": "string" },
+    "photo_urls": { "type": "array", "items": { "type": "string" } },
+    "estimate_low": { "type": "number" },
+    "estimate_high": { "type": "number" },
+    "potential_low": { "type": "number" },
+    "potential_high": { "type": "number" },
+    "summary": { "type": "string" },
+    "analysis": { "type": "object" }
+  },
+  "required": ["vehicle_make", "vehicle_model", "country", "region_code"],
+  "rls": {
+    "create": true,
+    "read": { "created_by": "{{user.email}}" },
+    "update": { "created_by": "{{user.email}}" },
+    "delete": { "created_by": "{{user.email}}" }
+  }
+}
