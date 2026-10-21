@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Box, Camera, Link2, Palette, Sparkles, Wand2 } from "lucide-react";
+import { Box, Camera, Car, Link2, Palette, Sparkles, Wand2 } from "lucide-react";
 
 const FEATURES = [
   {
@@ -41,12 +41,20 @@ export default function Home() {
         <span className="font-semibold text-lg">
           Inhome<span className="text-blue-500">Design</span>
         </span>
-        <Link
-          href="/studio"
-          className="text-sm font-medium px-4 py-2 rounded-lg bg-neutral-900 text-white hover:bg-neutral-700 transition-colors"
-        >
-          Open Studio
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/estimate"
+            className="text-sm font-medium px-4 py-2 rounded-lg text-neutral-700 hover:bg-neutral-100 transition-colors inline-flex items-center gap-1.5"
+          >
+            <Car size={16} /> Car damage estimate
+          </Link>
+          <Link
+            href="/studio"
+            className="text-sm font-medium px-4 py-2 rounded-lg bg-neutral-900 text-white hover:bg-neutral-700 transition-colors"
+          >
+            Open Studio
+          </Link>
+        </div>
       </header>
 
       <section className="max-w-4xl mx-auto px-6 pt-16 pb-20 text-center">

@@ -48,3 +48,18 @@ body {
   background: #d4d4d4;
   border-radius: 3px;
 }
+
+@keyframes scan {
+  0% {
+    top: 0%;
+  }
+  50% {
+    top: 100%;
+  }
+  100% {
+    top: 0%;
+  }
+}
+.scan-line {
+  animation: scan 2.2s ease-in-out infinite;
+}
