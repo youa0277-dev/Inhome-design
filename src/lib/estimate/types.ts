@@ -64,8 +64,12 @@ export interface VehicleInfo {
   trim?: string;
 }
 
+export type CountryCode = "US" | "CA";
+
 export interface LocationInfo {
-  stateCode: string;
+  country: CountryCode;
+  /** State or province code within the country; empty until the user picks one. */
+  regionCode: string;
   areaType: AreaType;
   city?: string;
   zip?: string;

@@ -1,33 +1,43 @@
-import { NATIONAL_BASELINE, getAreaIndex, getRegion } from "./regions";
+import { getAreaIndex, getCountry, getRegion } from "./regions";
 import type { ConfirmedDamage, DamageAnalysis, LocationInfo, PotentialDamage, Range } from "./types";
 
 export interface LocalRates {
   regionName: string;
+  countryName: string;
+  currency: "USD" | "CAD";
   bodyLaborRate: number;
   paintLaborRate: number;
   paintMaterialsPerHour: number;
-  partsIndex: number;
-  partsTax: number;
-  /** Combined labor adjustment vs. the national baseline (e.g. 1.25 = 25% above). */
+  /** Converts the model's USD national-average parts prices to local prices. */
+  partsFactor: number;
+  taxRate: number;
+  taxBase: "parts" | "all";
+  taxLabel: string;
+  /** Combined labor adjustment vs. the country's national baseline (e.g. 1.25 = 25% above). */
   laborAdjustment: number;
   overridden: boolean;
 }
 
 export function getLocalRates(location: LocationInfo): LocalRates {
-  const region = getRegion(location.stateCode);
+  const country = getCountry(location.country);
+  const region = getRegion(location.country, location.regionCode);
   const laborIndex = (region?.laborIndex ?? 1) * getAreaIndex(location.areaType);
   const override = location.laborRateOverride && location.laborRateOverride > 0 ? location.laborRateOverride : undefined;
-  const bodyLaborRate = override ?? NATIONAL_BASELINE.bodyLaborRate * laborIndex;
-  const paintLaborRate = override ?? NATIONAL_BASELINE.paintLaborRate * laborIndex;
+  const bodyLaborRate = override ?? country.baseline.bodyLaborRate * laborIndex;
+  const paintLaborRate = override ?? country.baseline.paintLaborRate * laborIndex;
 
   return {
-    regionName: region?.name ?? "United States (national average)",
+    regionName: region ? `${region.name}, ${country.name}` : `${country.name} (national average)`,
+    countryName: country.name,
+    currency: country.currency,
     bodyLaborRate: round(bodyLaborRate),
     paintLaborRate: round(paintLaborRate),
-    paintMaterialsPerHour: round(NATIONAL_BASELINE.paintMaterialsPerHour * laborIndex),
-    partsIndex: region?.partsIndex ?? 1,
-    partsTax: region?.partsTax ?? 0,
-    laborAdjustment: bodyLaborRate / NATIONAL_BASELINE.bodyLaborRate,
+    paintMaterialsPerHour: round(country.baseline.paintMaterialsPerHour * laborIndex),
+    partsFactor: country.partsFromUsd * (region?.partsIndex ?? 1),
+    taxRate: region?.taxRate ?? 0,
+    taxBase: country.taxBase,
+    taxLabel: country.taxLabel,
+    laborAdjustment: bodyLaborRate / country.baseline.bodyLaborRate,
     overridden: Boolean(override),
   };
 }
@@ -36,6 +46,7 @@ export interface CostBreakdown {
   labor: Range;
   paintMaterials: Range;
   parts: Range;
+  tax: Range;
   total: Range;
 }
 
@@ -55,11 +66,6 @@ export interface Estimate {
   worstCaseTotal: Range;
 }
 
-function partsCost(low: number, high: number, rates: LocalRates): Range {
-  const factor = rates.partsIndex * (1 + rates.partsTax);
-  return { low: low * factor, high: high * factor };
-}
-
 function costConfirmed(d: ConfirmedDamage, rates: LocalRates): CostBreakdown {
   const labor = {
     low: d.body_labor_hours_low * rates.bodyLaborRate + d.paint_labor_hours_low * rates.paintLaborRate,
@@ -69,24 +75,30 @@ function costConfirmed(d: ConfirmedDamage, rates: LocalRates): CostBreakdown {
     low: d.paint_labor_hours_low * rates.paintMaterialsPerHour,
     high: d.paint_labor_hours_high * rates.paintMaterialsPerHour,
   };
-  const parts = partsCost(d.parts_cost_low, d.parts_cost_high, rates);
-  return finalize(labor, paintMaterials, parts);
+  const parts = { low: d.parts_cost_low * rates.partsFactor, high: d.parts_cost_high * rates.partsFactor };
+  return finalize(labor, paintMaterials, parts, rates);
 }
 
 function costPotential(d: PotentialDamage, rates: LocalRates): CostBreakdown {
   const labor = { low: d.labor_hours_low * rates.bodyLaborRate, high: d.labor_hours_high * rates.bodyLaborRate };
-  const parts = partsCost(d.parts_cost_low, d.parts_cost_high, rates);
-  return finalize(labor, { low: 0, high: 0 }, parts);
+  const parts = { low: d.parts_cost_low * rates.partsFactor, high: d.parts_cost_high * rates.partsFactor };
+  return finalize(labor, { low: 0, high: 0 }, parts, rates);
 }
 
-function finalize(labor: Range, paintMaterials: Range, parts: Range): CostBreakdown {
+function finalize(labor: Range, paintMaterials: Range, parts: Range, rates: LocalRates): CostBreakdown {
+  const taxable =
+    rates.taxBase === "all"
+      ? { low: labor.low + paintMaterials.low + parts.low, high: labor.high + paintMaterials.high + parts.high }
+      : parts;
+  const tax = { low: taxable.low * rates.taxRate, high: taxable.high * rates.taxRate };
   return {
     labor: roundRange(labor),
     paintMaterials: roundRange(paintMaterials),
     parts: roundRange(parts),
+    tax: roundRange(tax),
     total: roundRange({
-      low: labor.low + paintMaterials.low + parts.low,
-      high: labor.high + paintMaterials.high + parts.high,
+      low: labor.low + paintMaterials.low + parts.low + tax.low,
+      high: labor.high + paintMaterials.high + parts.high + tax.high,
     }),
   };
 }
@@ -104,6 +116,7 @@ export function buildEstimate(analysis: DamageAnalysis, location: LocationInfo):
     labor: sumRanges(confirmed.map((c) => c.cost.labor)),
     paintMaterials: sumRanges(confirmed.map((c) => c.cost.paintMaterials)),
     parts: sumRanges(confirmed.map((c) => c.cost.parts)),
+    tax: sumRanges(confirmed.map((c) => c.cost.tax)),
     total: sumRanges(confirmed.map((c) => c.cost.total)),
   };
   const potentialTotal = sumRanges(potential.map((p) => p.cost.total));
@@ -125,16 +138,17 @@ function round(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-/** Estimates are ranges, so round outward to the nearest $10 to avoid false precision. */
+/** Estimates are ranges, so round outward to the nearest 10 to avoid false precision. */
 function roundRange(r: Range): Range {
   return { low: Math.floor(r.low / 10) * 10, high: Math.ceil(r.high / 10) * 10 };
 }
 
-export function formatUsd(n: number): string {
-  return n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+/** "$1,200" for USD, "CA$1,200" for CAD so Canadian amounts are never mistaken for US dollars. */
+export function formatMoney(n: number, currency: "USD" | "CAD"): string {
+  return n.toLocaleString("en-US", { style: "currency", currency, maximumFractionDigits: 0 });
 }
 
-export function formatRange(r: Range): string {
-  if (r.low === r.high) return formatUsd(r.low);
-  return `${formatUsd(r.low)} – ${formatUsd(r.high)}`;
+export function formatRange(r: Range, currency: "USD" | "CAD"): string {
+  if (r.low === r.high) return formatMoney(r.low, currency);
+  return `${formatMoney(r.low, currency)} – ${formatMoney(r.high, currency)}`;
 }

@@ -2,8 +2,8 @@
 
 import clsx from "clsx";
 import { CheckCircle2, Info, MapPin, ShieldAlert, TriangleAlert, Wrench } from "lucide-react";
-import { formatRange, formatUsd, type Estimate } from "@/lib/estimate/pricing";
-import type { Confidence, DamageAnalysis, Likelihood, RepairMethod, Severity } from "@/lib/estimate/types";
+import { formatMoney, formatRange, type Estimate } from "@/lib/estimate/pricing";
+import type { Confidence, Range, DamageAnalysis, Likelihood, RepairMethod, Severity } from "@/lib/estimate/types";
 
 const REPAIR_LABELS: Record<RepairMethod, string> = {
   paintless_dent_repair: "Paintless dent repair",
@@ -47,6 +47,8 @@ export function EstimateResults({ analysis, estimate, previews, isSample }: Prop
   const poorPhotos = analysis.photo_quality.filter((p) => p.clarity === "poor" || !p.shows_damage);
   const { rates } = estimate;
   const pct = Math.round((rates.laborAdjustment - 1) * 100);
+  const money = (n: number) => formatMoney(n, rates.currency);
+  const range = (r: Range) => formatRange(r, rates.currency);
 
   return (
     <div className="space-y-6">
@@ -87,7 +89,7 @@ export function EstimateResults({ analysis, estimate, previews, isSample }: Prop
       <section className="rounded-2xl border border-neutral-200 bg-white p-6">
         <p className="text-sm text-neutral-500">Estimated repair cost for visible damage</p>
         <p className="text-3xl sm:text-4xl font-semibold tracking-tight text-neutral-900 mt-1">
-          Between {formatUsd(estimate.confirmedTotal.total.low)} and {formatUsd(estimate.confirmedTotal.total.high)}
+          Between {money(estimate.confirmedTotal.total.low)} and {money(estimate.confirmedTotal.total.high)}
         </p>
         <p className="text-sm text-neutral-600 mt-3">{analysis.summary}</p>
         {analysis.vehicle_observed && (
@@ -97,7 +99,7 @@ export function EstimateResults({ analysis, estimate, previews, isSample }: Prop
           <p className="text-sm text-neutral-700 mt-4 pt-4 border-t border-neutral-100">
             If the potential hidden damages below are found, the total could reach{" "}
             <strong>
-              between {formatUsd(estimate.worstCaseTotal.low)} and {formatUsd(estimate.worstCaseTotal.high)}
+              between {money(estimate.worstCaseTotal.low)} and {money(estimate.worstCaseTotal.high)}
             </strong>
             .
           </p>
@@ -147,21 +149,25 @@ export function EstimateResults({ analysis, estimate, previews, isSample }: Prop
                         <img key={idx} src={previews[idx - 1]} alt={`Photo ${idx}`} className="w-12 h-12 rounded-md object-cover" />
                       ) : null
                     )}
-                    <p className="font-semibold text-neutral-900 whitespace-nowrap">{formatRange(cost.total)}</p>
+                    <p className="font-semibold text-neutral-900 whitespace-nowrap">{range(cost.total)}</p>
                   </div>
                 </div>
-                <dl className="mt-3 grid grid-cols-3 gap-2 text-xs text-neutral-500 border-t border-neutral-100 pt-3">
+                <dl className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-neutral-500 border-t border-neutral-100 pt-3">
                   <div>
                     <dt>Labor</dt>
-                    <dd className="text-neutral-700">{formatRange(cost.labor)}</dd>
+                    <dd className="text-neutral-700">{range(cost.labor)}</dd>
                   </div>
                   <div>
                     <dt>Paint materials</dt>
-                    <dd className="text-neutral-700">{formatRange(cost.paintMaterials)}</dd>
+                    <dd className="text-neutral-700">{range(cost.paintMaterials)}</dd>
                   </div>
                   <div>
-                    <dt>Parts (incl. tax)</dt>
-                    <dd className="text-neutral-700">{formatRange(cost.parts)}</dd>
+                    <dt>Parts</dt>
+                    <dd className="text-neutral-700">{range(cost.parts)}</dd>
+                  </div>
+                  <div>
+                    <dt>Tax</dt>
+                    <dd className="text-neutral-700">{range(cost.tax)}</dd>
                   </div>
                 </dl>
               </div>
@@ -169,7 +175,7 @@ export function EstimateResults({ analysis, estimate, previews, isSample }: Prop
             <div className="flex justify-between rounded-xl bg-neutral-900 text-white px-4 py-3">
               <span className="font-medium">Visible damage total</span>
               <span className="font-semibold">
-                Between {formatUsd(estimate.confirmedTotal.total.low)} and {formatUsd(estimate.confirmedTotal.total.high)}
+                Between {money(estimate.confirmedTotal.total.low)} and {money(estimate.confirmedTotal.total.high)}
               </span>
             </div>
           </div>
@@ -202,7 +208,7 @@ export function EstimateResults({ analysis, estimate, previews, isSample }: Prop
                     {item.inspection_note && <p className="text-xs text-neutral-400 mt-1.5">{item.inspection_note}</p>}
                   </div>
                   <p className="text-sm text-neutral-900 whitespace-nowrap">
-                    Between <strong>{formatUsd(cost.total.low)}</strong> and <strong>{formatUsd(cost.total.high)}</strong>
+                    Between <strong>{money(cost.total.low)}</strong> and <strong>{money(cost.total.high)}</strong>
                   </p>
                 </div>
               </div>
@@ -210,7 +216,7 @@ export function EstimateResults({ analysis, estimate, previews, isSample }: Prop
             <div className="flex flex-wrap justify-between gap-2 rounded-xl bg-amber-100 text-amber-900 px-4 py-3">
               <span className="font-medium">Potential additional cost</span>
               <span className="font-semibold">
-                Between {formatUsd(estimate.potentialTotal.low)} and {formatUsd(estimate.potentialTotal.high)}
+                Between {money(estimate.potentialTotal.low)} and {money(estimate.potentialTotal.high)}
               </span>
             </div>
           </div>
@@ -225,25 +231,29 @@ export function EstimateResults({ analysis, estimate, previews, isSample }: Prop
         <dl className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-neutral-500">
           <div>
             <dt className="text-xs">Body labor</dt>
-            <dd className="text-neutral-800">{formatUsd(rates.bodyLaborRate)}/hr</dd>
+            <dd className="text-neutral-800">{money(rates.bodyLaborRate)}/hr</dd>
           </div>
           <div>
             <dt className="text-xs">Paint labor</dt>
-            <dd className="text-neutral-800">{formatUsd(rates.paintLaborRate)}/hr</dd>
+            <dd className="text-neutral-800">{money(rates.paintLaborRate)}/hr</dd>
           </div>
           <div>
             <dt className="text-xs">Paint materials</dt>
-            <dd className="text-neutral-800">{formatUsd(rates.paintMaterialsPerHour)}/paint hr</dd>
+            <dd className="text-neutral-800">{money(rates.paintMaterialsPerHour)}/paint hr</dd>
           </div>
           <div>
-            <dt className="text-xs">Parts tax</dt>
-            <dd className="text-neutral-800">{(rates.partsTax * 100).toFixed(2).replace(/\.?0+$/, "")}%</dd>
+            <dt className="text-xs">{rates.taxLabel}</dt>
+            <dd className="text-neutral-800">
+              {(rates.taxRate * 100).toFixed(3).replace(/\.?0+$/, "")}%
+              {rates.taxBase === "all" ? " on parts & labor" : ""}
+            </dd>
           </div>
         </dl>
         <p className="text-xs text-neutral-400 mt-3">
           {rates.overridden
             ? "Using the labor rate you entered."
-            : `Labor is ${pct === 0 ? "at" : `${Math.abs(pct)}% ${pct > 0 ? "above" : "below"}`} the US national average for this location.`}{" "}
+            : `Labor is ${pct === 0 ? "at" : `${Math.abs(pct)}% ${pct > 0 ? "above" : "below"}`} the ${rates.countryName} national average for this location.`}{" "}
+          {rates.currency === "CAD" && "Amounts are in Canadian dollars. "}
           Change the location above and the estimate updates instantly.
         </p>
       </section>

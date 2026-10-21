@@ -1,80 +1,134 @@
-import type { AreaType } from "./types";
+import type { AreaType, CountryCode } from "./types";
 
 /**
  * Regional cost data used to localize an estimate. Rates are approximations of typical
  * independent collision-shop pricing and are meant for preliminary estimates only.
  */
 
-/** US national baseline, USD. */
-export const NATIONAL_BASELINE = {
-  bodyLaborRate: 62, // $/hr
-  paintLaborRate: 62, // $/hr
-  paintMaterialsPerHour: 42, // $ per paint labor hour
-};
+export interface Country {
+  code: CountryCode;
+  name: string;
+  currency: "USD" | "CAD";
+  /** What the subdivision picker is called ("State", "Province / territory"). */
+  subdivisionLabel: string;
+  /** National baseline rates in the local currency. */
+  baseline: {
+    bodyLaborRate: number; // per hour
+    paintLaborRate: number; // per hour
+    paintMaterialsPerHour: number; // per paint labor hour
+  };
+  /**
+   * The model prices parts in USD; this converts them to local prices. Canadian parts prices
+   * run roughly at the exchange rate, so this doubles as an exchange-rate approximation.
+   */
+  partsFromUsd: number;
+  /** Whether sales tax applies to the whole repair or to parts only. */
+  taxBase: "parts" | "all";
+  taxLabel: string;
+}
+
+export const COUNTRIES: Country[] = [
+  {
+    code: "US",
+    name: "United States",
+    currency: "USD",
+    subdivisionLabel: "State",
+    baseline: { bodyLaborRate: 62, paintLaborRate: 62, paintMaterialsPerHour: 42 },
+    partsFromUsd: 1,
+    taxBase: "parts",
+    taxLabel: "Sales tax on parts",
+  },
+  {
+    code: "CA",
+    name: "Canada",
+    currency: "CAD",
+    subdivisionLabel: "Province / territory",
+    baseline: { bodyLaborRate: 115, paintLaborRate: 115, paintMaterialsPerHour: 55 },
+    partsFromUsd: 1.38,
+    taxBase: "all",
+    taxLabel: "GST / HST / PST",
+  },
+];
 
 export interface Region {
+  country: CountryCode;
   code: string;
   name: string;
   /** Multiplier applied to labor rates and paint materials. */
   laborIndex: number;
   /** Multiplier applied to parts (shipping / remoteness). */
   partsIndex: number;
-  /** Approximate base state sales tax on parts, as a fraction. */
-  partsTax: number;
+  /** Approximate combined sales tax, as a fraction (see the country's taxBase). */
+  taxRate: number;
 }
 
 export const REGIONS: Region[] = [
-  { code: "AL", name: "Alabama", laborIndex: 0.9, partsIndex: 1, partsTax: 0.04 },
-  { code: "AK", name: "Alaska", laborIndex: 1.25, partsIndex: 1.12, partsTax: 0 },
-  { code: "AZ", name: "Arizona", laborIndex: 1.0, partsIndex: 1, partsTax: 0.056 },
-  { code: "AR", name: "Arkansas", laborIndex: 0.88, partsIndex: 1, partsTax: 0.065 },
-  { code: "CA", name: "California", laborIndex: 1.25, partsIndex: 1, partsTax: 0.0725 },
-  { code: "CO", name: "Colorado", laborIndex: 1.1, partsIndex: 1, partsTax: 0.029 },
-  { code: "CT", name: "Connecticut", laborIndex: 1.15, partsIndex: 1, partsTax: 0.0635 },
-  { code: "DE", name: "Delaware", laborIndex: 1.05, partsIndex: 1, partsTax: 0 },
-  { code: "DC", name: "District of Columbia", laborIndex: 1.2, partsIndex: 1, partsTax: 0.06 },
-  { code: "FL", name: "Florida", laborIndex: 1.0, partsIndex: 1, partsTax: 0.06 },
-  { code: "GA", name: "Georgia", laborIndex: 0.97, partsIndex: 1, partsTax: 0.04 },
-  { code: "HI", name: "Hawaii", laborIndex: 1.25, partsIndex: 1.12, partsTax: 0.04 },
-  { code: "ID", name: "Idaho", laborIndex: 0.93, partsIndex: 1, partsTax: 0.06 },
-  { code: "IL", name: "Illinois", laborIndex: 1.08, partsIndex: 1, partsTax: 0.0625 },
-  { code: "IN", name: "Indiana", laborIndex: 0.93, partsIndex: 1, partsTax: 0.07 },
-  { code: "IA", name: "Iowa", laborIndex: 0.93, partsIndex: 1, partsTax: 0.06 },
-  { code: "KS", name: "Kansas", laborIndex: 0.92, partsIndex: 1, partsTax: 0.065 },
-  { code: "KY", name: "Kentucky", laborIndex: 0.9, partsIndex: 1, partsTax: 0.06 },
-  { code: "LA", name: "Louisiana", laborIndex: 0.93, partsIndex: 1, partsTax: 0.05 },
-  { code: "ME", name: "Maine", laborIndex: 1.0, partsIndex: 1.02, partsTax: 0.055 },
-  { code: "MD", name: "Maryland", laborIndex: 1.1, partsIndex: 1, partsTax: 0.06 },
-  { code: "MA", name: "Massachusetts", laborIndex: 1.22, partsIndex: 1, partsTax: 0.0625 },
-  { code: "MI", name: "Michigan", laborIndex: 1.0, partsIndex: 1, partsTax: 0.06 },
-  { code: "MN", name: "Minnesota", laborIndex: 1.05, partsIndex: 1, partsTax: 0.06875 },
-  { code: "MS", name: "Mississippi", laborIndex: 0.86, partsIndex: 1, partsTax: 0.07 },
-  { code: "MO", name: "Missouri", laborIndex: 0.93, partsIndex: 1, partsTax: 0.04225 },
-  { code: "MT", name: "Montana", laborIndex: 0.95, partsIndex: 1.03, partsTax: 0 },
-  { code: "NE", name: "Nebraska", laborIndex: 0.93, partsIndex: 1, partsTax: 0.055 },
-  { code: "NV", name: "Nevada", laborIndex: 1.05, partsIndex: 1, partsTax: 0.0685 },
-  { code: "NH", name: "New Hampshire", laborIndex: 1.05, partsIndex: 1, partsTax: 0 },
-  { code: "NJ", name: "New Jersey", laborIndex: 1.18, partsIndex: 1, partsTax: 0.06625 },
-  { code: "NM", name: "New Mexico", laborIndex: 0.93, partsIndex: 1, partsTax: 0.04875 },
-  { code: "NY", name: "New York", laborIndex: 1.2, partsIndex: 1, partsTax: 0.04 },
-  { code: "NC", name: "North Carolina", laborIndex: 0.95, partsIndex: 1, partsTax: 0.0475 },
-  { code: "ND", name: "North Dakota", laborIndex: 0.95, partsIndex: 1.03, partsTax: 0.05 },
-  { code: "OH", name: "Ohio", laborIndex: 0.95, partsIndex: 1, partsTax: 0.0575 },
-  { code: "OK", name: "Oklahoma", laborIndex: 0.9, partsIndex: 1, partsTax: 0.045 },
-  { code: "OR", name: "Oregon", laborIndex: 1.12, partsIndex: 1, partsTax: 0 },
-  { code: "PA", name: "Pennsylvania", laborIndex: 1.02, partsIndex: 1, partsTax: 0.06 },
-  { code: "RI", name: "Rhode Island", laborIndex: 1.1, partsIndex: 1, partsTax: 0.07 },
-  { code: "SC", name: "South Carolina", laborIndex: 0.92, partsIndex: 1, partsTax: 0.06 },
-  { code: "SD", name: "South Dakota", laborIndex: 0.92, partsIndex: 1.02, partsTax: 0.042 },
-  { code: "TN", name: "Tennessee", laborIndex: 0.93, partsIndex: 1, partsTax: 0.07 },
-  { code: "TX", name: "Texas", laborIndex: 0.97, partsIndex: 1, partsTax: 0.0625 },
-  { code: "UT", name: "Utah", laborIndex: 1.0, partsIndex: 1, partsTax: 0.061 },
-  { code: "VT", name: "Vermont", laborIndex: 1.0, partsIndex: 1.02, partsTax: 0.06 },
-  { code: "VA", name: "Virginia", laborIndex: 1.02, partsIndex: 1, partsTax: 0.053 },
-  { code: "WA", name: "Washington", laborIndex: 1.2, partsIndex: 1, partsTax: 0.065 },
-  { code: "WV", name: "West Virginia", laborIndex: 0.88, partsIndex: 1, partsTax: 0.06 },
-  { code: "WI", name: "Wisconsin", laborIndex: 0.97, partsIndex: 1, partsTax: 0.05 },
-  { code: "WY", name: "Wyoming", laborIndex: 0.95, partsIndex: 1.03, partsTax: 0.04 },
+  { country: "US", code: "AL", name: "Alabama", laborIndex: 0.9, partsIndex: 1, taxRate: 0.04 },
+  { country: "US", code: "AK", name: "Alaska", laborIndex: 1.25, partsIndex: 1.12, taxRate: 0 },
+  { country: "US", code: "AZ", name: "Arizona", laborIndex: 1.0, partsIndex: 1, taxRate: 0.056 },
+  { country: "US", code: "AR", name: "Arkansas", laborIndex: 0.88, partsIndex: 1, taxRate: 0.065 },
+  { country: "US", code: "CA", name: "California", laborIndex: 1.25, partsIndex: 1, taxRate: 0.0725 },
+  { country: "US", code: "CO", name: "Colorado", laborIndex: 1.1, partsIndex: 1, taxRate: 0.029 },
+  { country: "US", code: "CT", name: "Connecticut", laborIndex: 1.15, partsIndex: 1, taxRate: 0.0635 },
+  { country: "US", code: "DE", name: "Delaware", laborIndex: 1.05, partsIndex: 1, taxRate: 0 },
+  { country: "US", code: "DC", name: "District of Columbia", laborIndex: 1.2, partsIndex: 1, taxRate: 0.06 },
+  { country: "US", code: "FL", name: "Florida", laborIndex: 1.0, partsIndex: 1, taxRate: 0.06 },
+  { country: "US", code: "GA", name: "Georgia", laborIndex: 0.97, partsIndex: 1, taxRate: 0.04 },
+  { country: "US", code: "HI", name: "Hawaii", laborIndex: 1.25, partsIndex: 1.12, taxRate: 0.04 },
+  { country: "US", code: "ID", name: "Idaho", laborIndex: 0.93, partsIndex: 1, taxRate: 0.06 },
+  { country: "US", code: "IL", name: "Illinois", laborIndex: 1.08, partsIndex: 1, taxRate: 0.0625 },
+  { country: "US", code: "IN", name: "Indiana", laborIndex: 0.93, partsIndex: 1, taxRate: 0.07 },
+  { country: "US", code: "IA", name: "Iowa", laborIndex: 0.93, partsIndex: 1, taxRate: 0.06 },
+  { country: "US", code: "KS", name: "Kansas", laborIndex: 0.92, partsIndex: 1, taxRate: 0.065 },
+  { country: "US", code: "KY", name: "Kentucky", laborIndex: 0.9, partsIndex: 1, taxRate: 0.06 },
+  { country: "US", code: "LA", name: "Louisiana", laborIndex: 0.93, partsIndex: 1, taxRate: 0.05 },
+  { country: "US", code: "ME", name: "Maine", laborIndex: 1.0, partsIndex: 1.02, taxRate: 0.055 },
+  { country: "US", code: "MD", name: "Maryland", laborIndex: 1.1, partsIndex: 1, taxRate: 0.06 },
+  { country: "US", code: "MA", name: "Massachusetts", laborIndex: 1.22, partsIndex: 1, taxRate: 0.0625 },
+  { country: "US", code: "MI", name: "Michigan", laborIndex: 1.0, partsIndex: 1, taxRate: 0.06 },
+  { country: "US", code: "MN", name: "Minnesota", laborIndex: 1.05, partsIndex: 1, taxRate: 0.06875 },
+  { country: "US", code: "MS", name: "Mississippi", laborIndex: 0.86, partsIndex: 1, taxRate: 0.07 },
+  { country: "US", code: "MO", name: "Missouri", laborIndex: 0.93, partsIndex: 1, taxRate: 0.04225 },
+  { country: "US", code: "MT", name: "Montana", laborIndex: 0.95, partsIndex: 1.03, taxRate: 0 },
+  { country: "US", code: "NE", name: "Nebraska", laborIndex: 0.93, partsIndex: 1, taxRate: 0.055 },
+  { country: "US", code: "NV", name: "Nevada", laborIndex: 1.05, partsIndex: 1, taxRate: 0.0685 },
+  { country: "US", code: "NH", name: "New Hampshire", laborIndex: 1.05, partsIndex: 1, taxRate: 0 },
+  { country: "US", code: "NJ", name: "New Jersey", laborIndex: 1.18, partsIndex: 1, taxRate: 0.06625 },
+  { country: "US", code: "NM", name: "New Mexico", laborIndex: 0.93, partsIndex: 1, taxRate: 0.04875 },
+  { country: "US", code: "NY", name: "New York", laborIndex: 1.2, partsIndex: 1, taxRate: 0.04 },
+  { country: "US", code: "NC", name: "North Carolina", laborIndex: 0.95, partsIndex: 1, taxRate: 0.0475 },
+  { country: "US", code: "ND", name: "North Dakota", laborIndex: 0.95, partsIndex: 1.03, taxRate: 0.05 },
+  { country: "US", code: "OH", name: "Ohio", laborIndex: 0.95, partsIndex: 1, taxRate: 0.0575 },
+  { country: "US", code: "OK", name: "Oklahoma", laborIndex: 0.9, partsIndex: 1, taxRate: 0.045 },
+  { country: "US", code: "OR", name: "Oregon", laborIndex: 1.12, partsIndex: 1, taxRate: 0 },
+  { country: "US", code: "PA", name: "Pennsylvania", laborIndex: 1.02, partsIndex: 1, taxRate: 0.06 },
+  { country: "US", code: "RI", name: "Rhode Island", laborIndex: 1.1, partsIndex: 1, taxRate: 0.07 },
+  { country: "US", code: "SC", name: "South Carolina", laborIndex: 0.92, partsIndex: 1, taxRate: 0.06 },
+  { country: "US", code: "SD", name: "South Dakota", laborIndex: 0.92, partsIndex: 1.02, taxRate: 0.042 },
+  { country: "US", code: "TN", name: "Tennessee", laborIndex: 0.93, partsIndex: 1, taxRate: 0.07 },
+  { country: "US", code: "TX", name: "Texas", laborIndex: 0.97, partsIndex: 1, taxRate: 0.0625 },
+  { country: "US", code: "UT", name: "Utah", laborIndex: 1.0, partsIndex: 1, taxRate: 0.061 },
+  { country: "US", code: "VT", name: "Vermont", laborIndex: 1.0, partsIndex: 1.02, taxRate: 0.06 },
+  { country: "US", code: "VA", name: "Virginia", laborIndex: 1.02, partsIndex: 1, taxRate: 0.053 },
+  { country: "US", code: "WA", name: "Washington", laborIndex: 1.2, partsIndex: 1, taxRate: 0.065 },
+  { country: "US", code: "WV", name: "West Virginia", laborIndex: 0.88, partsIndex: 1, taxRate: 0.06 },
+  { country: "US", code: "WI", name: "Wisconsin", laborIndex: 0.97, partsIndex: 1, taxRate: 0.05 },
+  { country: "US", code: "WY", name: "Wyoming", laborIndex: 0.95, partsIndex: 1.03, taxRate: 0.04 },
+
+  // Canada: tax is the combined GST/HST + PST/QST, which applies to repair labor and parts.
+  { country: "CA", code: "AB", name: "Alberta", laborIndex: 1.05, partsIndex: 1, taxRate: 0.05 },
+  { country: "CA", code: "BC", name: "British Columbia", laborIndex: 1.08, partsIndex: 1, taxRate: 0.12 },
+  { country: "CA", code: "MB", name: "Manitoba", laborIndex: 0.95, partsIndex: 1.02, taxRate: 0.12 },
+  { country: "CA", code: "NB", name: "New Brunswick", laborIndex: 0.9, partsIndex: 1.03, taxRate: 0.15 },
+  { country: "CA", code: "NL", name: "Newfoundland and Labrador", laborIndex: 0.95, partsIndex: 1.06, taxRate: 0.15 },
+  { country: "CA", code: "NS", name: "Nova Scotia", laborIndex: 0.92, partsIndex: 1.03, taxRate: 0.14 },
+  { country: "CA", code: "ON", name: "Ontario", laborIndex: 1.03, partsIndex: 1, taxRate: 0.13 },
+  { country: "CA", code: "PE", name: "Prince Edward Island", laborIndex: 0.9, partsIndex: 1.04, taxRate: 0.15 },
+  { country: "CA", code: "QC", name: "Quebec", laborIndex: 0.95, partsIndex: 1, taxRate: 0.14975 },
+  { country: "CA", code: "SK", name: "Saskatchewan", laborIndex: 0.97, partsIndex: 1.02, taxRate: 0.11 },
+  { country: "CA", code: "NT", name: "Northwest Territories", laborIndex: 1.2, partsIndex: 1.2, taxRate: 0.05 },
+  { country: "CA", code: "NU", name: "Nunavut", laborIndex: 1.3, partsIndex: 1.3, taxRate: 0.05 },
+  { country: "CA", code: "YT", name: "Yukon", laborIndex: 1.15, partsIndex: 1.15, taxRate: 0.05 },
 ];
 
 export const AREA_TYPES: { value: AreaType; label: string; index: number }[] = [
@@ -83,8 +137,16 @@ export const AREA_TYPES: { value: AreaType; label: string; index: number }[] = [
   { value: "rural", label: "Small town / rural", index: 0.9 },
 ];
 
-export function getRegion(code: string): Region | undefined {
-  return REGIONS.find((r) => r.code === code);
+export function getCountry(code: CountryCode): Country {
+  return COUNTRIES.find((c) => c.code === code) ?? COUNTRIES[0];
+}
+
+export function getRegions(country: CountryCode): Region[] {
+  return REGIONS.filter((r) => r.country === country);
+}
+
+export function getRegion(country: CountryCode, code: string): Region | undefined {
+  return REGIONS.find((r) => r.country === country && r.code === code);
 }
 
 export function getAreaIndex(areaType: AreaType): number {
